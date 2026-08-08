@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kegiatan — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="kegiatan.html" class="active"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">Kegiatan Sekolah</h1>
+
+    <div class="toolbar">
+      <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchKegiatan" placeholder="Cari nama kegiatan..."></div>
+      <button class="btn btn-primary" id="btnAddKegiatan" data-roles="super_admin"><i data-lucide="plus"></i>Tambah Kegiatan</button>
+    </div>
+
+    <div class="panel panel-white">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Kegiatan</th><th>Tanggal</th><th>Waktu</th><th>Lokasi</th>
+              <th>Kelas Terkait</th><th>Status</th><th data-roles="super_admin">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="kegiatanTableBody">
+            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Tambah/Edit Kegiatan -->
+<div class="modal-overlay" id="kegiatanModal">
+  <div class="modal">
+    <h3 id="kegiatanModalTitle">Tambah Kegiatan</h3>
+    <form id="kegiatanForm">
+      <input type="hidden" id="kegiatanId">
+      <div class="field"><label>Nama Kegiatan</label><input type="text" id="kegiatanNama" placeholder="Lomba Mewarnai, Hari Ibu &amp; Anak, dst." required></div>
+      <div class="field"><label>Tanggal</label><input type="date" id="kegiatanTanggal" required></div>
+      <div class="field"><label>Waktu</label><input type="text" id="kegiatanWaktu" placeholder="08.00 - 10.00"></div>
+      <div class="field"><label>Lokasi</label><input type="text" id="kegiatanLokasi" placeholder="Aula, Halaman Sekolah, dst."></div>
+      <div class="field"><label>Kelas Terkait</label><input type="text" id="kegiatanKelas" placeholder="Semua Kelas, A1, B1, dst."></div>
+      <div class="field"><label>Deskripsi</label><input type="text" id="kegiatanDeskripsi" placeholder="Catatan singkat (opsional)"></div>
+      <div class="field"><label>Status</label>
+        <select id="kegiatanStatus">
+          <option value="Terjadwal">Terjadwal</option>
+          <option value="Selesai">Selesai</option>
+          <option value="Dibatalkan">Dibatalkan</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btnCancelKegiatan">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const session = requireAuth();
+  let allKegiatan = [];
+  const canEdit = session && session.role === "super_admin";
+
+  if (session) {
+    initLayout(session);
+    loadKegiatan();
+    document.getElementById("btnAddKegiatan").addEventListener("click", () => openModal());
+    document.getElementById("btnCancelKegiatan").addEventListener("click", closeModal);
+    document.getElementById("kegiatanForm").addEventListener("submit", saveKegiatan);
+    document.getElementById("searchKegiatan").addEventListener("input", (e) => renderTable(e.target.value));
+  }
+
+  async function loadKegiatan() {
+    try {
+      allKegiatan = await apiCall("getKegiatanList");
+      renderTable("");
+    } catch (err) {
+      document.getElementById("kegiatanTableBody").innerHTML =
+        `<tr><td colspan="7" class="empty-state">Gagal memuat data: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderTable(filter) {
+    const q = filter.trim().toLowerCase();
+    const rows = allKegiatan
+      .filter((k) => !q || k.nama.toLowerCase().includes(q))
+      .sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+    const body = document.getElementById("kegiatanTableBody");
+    if (rows.length === 0) {
+      body.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada kegiatan terjadwal.</td></tr>';
+      return;
+    }
+    const badgeClass = { Terjadwal: "badge-aktif", Selesai: "badge-aktif", Dibatalkan: "badge-nonaktif" };
+    body.innerHTML = rows.map((k) => `
+      <tr>
+        <td>${k.nama}</td>
+        <td>${k.tanggal || "-"}</td>
+        <td>${k.waktu || "-"}</td>
+        <td>${k.lokasi || "-"}</td>
+        <td>${k.kelasTerkait || "-"}</td>
+        <td><span class="badge ${badgeClass[k.status] || "badge-aktif"}">${k.status}</span></td>
+        <td data-roles="super_admin">
+          <div class="row-actions">
+            <button class="icon-btn" onclick='openModal(${JSON.stringify(k)})'><i data-lucide="pencil" style="width:16px;"></i></button>
+            <button class="icon-btn" onclick="deleteKegiatan('${k.id}')"><i data-lucide="trash-2" style="width:16px;"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+    document.querySelectorAll("[data-roles]").forEach((el) => {
+      const allowed = el.getAttribute("data-roles").split(",");
+      el.style.display = allowed.indexOf(session.role) === -1 ? "none" : "";
+    });
+    lucide.createIcons();
+  }
+
+  function openModal(k) {
+    if (!canEdit) return;
+    document.getElementById("kegiatanModalTitle").textContent = k ? "Edit Kegiatan" : "Tambah Kegiatan";
+    document.getElementById("kegiatanId").value = k ? k.id : "";
+    document.getElementById("kegiatanNama").value = k ? k.nama : "";
+    document.getElementById("kegiatanTanggal").value = k ? k.tanggal : "";
+    document.getElementById("kegiatanWaktu").value = k ? k.waktu : "";
+    document.getElementById("kegiatanLokasi").value = k ? k.lokasi : "";
+    document.getElementById("kegiatanKelas").value = k ? k.kelasTerkait : "";
+    document.getElementById("kegiatanDeskripsi").value = k ? k.deskripsi : "";
+    document.getElementById("kegiatanStatus").value = k ? k.status : "Terjadwal";
+    document.getElementById("kegiatanModal").classList.add("open");
+  }
+  function closeModal() {
+    document.getElementById("kegiatanModal").classList.remove("open");
+  }
+
+  async function saveKegiatan(e) {
+    e.preventDefault();
+    const id = document.getElementById("kegiatanId").value;
+    const payload = {
+      id: id || undefined,
+      nama: document.getElementById("kegiatanNama").value.trim(),
+      tanggal: document.getElementById("kegiatanTanggal").value,
+      waktu: document.getElementById("kegiatanWaktu").value.trim(),
+      lokasi: document.getElementById("kegiatanLokasi").value.trim(),
+      kelasTerkait: document.getElementById("kegiatanKelas").value.trim(),
+      deskripsi: document.getElementById("kegiatanDeskripsi").value.trim(),
+      status: document.getElementById("kegiatanStatus").value
+    };
+    try {
+      await apiCall(id ? "updateKegiatan" : "addKegiatan", payload);
+      closeModal();
+      loadKegiatan();
+    } catch (err) {
+      alert("Gagal menyimpan: " + err.message);
+    }
+  }
+
+  async function deleteKegiatan(id) {
+    if (!canEdit) return;
+    if (!confirm("Hapus kegiatan ini?")) return;
+    try {
+      await apiCall("deleteKegiatan", { id });
+      loadKegiatan();
+    } catch (err) {
+      alert("Gagal menghapus: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
