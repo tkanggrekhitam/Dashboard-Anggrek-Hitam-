@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beranda — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html" class="active"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="settings"></i><span class="label">Kegiatan</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+    <svg class="doodle" style="bottom:100px;left:20px;" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0F2E4C" stroke-width="1.5"><circle cx="12" cy="12" r="9"/></svg>
+    <svg class="doodle" style="bottom:60px;left:150px;" width="20" height="20" viewBox="0 0 24 24" fill="#0F2E4C"><polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9"/></svg>
+  </aside>
+
+  <header class="topbar">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">Selamat Datang di Dashboard TK Anggrek Hitam</h1>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Jumlah Siswa Aktif</div>
+        <div class="value-row"><span class="value" id="statSiswaAktif">—</span>
+          <div class="icon-wrap"><i data-lucide="trending-up"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Guru &amp; Staf</div>
+        <div class="value-row"><span class="value" id="statGuru">—</span>
+          <div class="icon-wrap"><i data-lucide="users"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Siswa Baru Tahun Ini</div>
+        <div class="value-row"><span class="value" id="statSiswaBaru">—</span>
+          <div class="icon-wrap"><i data-lucide="user-plus"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Kelas Aktif</div>
+        <div class="value-row"><span class="value" id="statKelas">—</span>
+          <div class="icon-wrap"><i data-lucide="book-open"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="panel">
+        <h3>Grafik Pendaftaran Siswa Baru</h3>
+        <canvas id="chartPendaftaran" height="230"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Ringkasan Siswa per Kelas</h3>
+        <canvas id="chartKelas" height="230"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Aktivitas Data Terbaru</h3>
+      <div class="event-list" id="recentList">
+        <div class="empty-state">Memuat data...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const session = requireAuth();
+  if (session) {
+    initLayout(session);
+    loadDashboard();
+  }
+
+  async function loadDashboard() {
+    try {
+      const stats = await apiCall("getDashboardStats");
+      document.getElementById("statSiswaAktif").textContent = stats.jumlahSiswaAktif;
+      document.getElementById("statGuru").textContent = stats.jumlahGuru;
+      document.getElementById("statSiswaBaru").textContent = stats.siswaBaruTahunIni;
+      document.getElementById("statKelas").textContent = stats.totalKelas;
+
+      new Chart(document.getElementById("chartPendaftaran"), {
+        type: "bar",
+        data: {
+          labels: stats.pendaftaranPerPeriode.map((p) => p.label),
+          datasets: [{
+            label: "Siswa Baru",
+            data: stats.pendaftaranPerPeriode.map((p) => p.jumlah),
+            backgroundColor: "#3FC7B8",
+            borderRadius: 6
+          }]
+        },
+        options: { plugins: { legend: { display: false } }, responsive: true }
+      });
+
+      new Chart(document.getElementById("chartKelas"), {
+        type: "bar",
+        data: {
+          labels: stats.siswaPerKelas.map((k) => k.label),
+          datasets: [{
+            label: "Siswa",
+            data: stats.siswaPerKelas.map((k) => k.jumlah),
+            backgroundColor: "#1E6FA8",
+            borderRadius: 6
+          }]
+        },
+        options: { plugins: { legend: { display: false } }, responsive: true }
+      });
+
+      const list = document.getElementById("recentList");
+      if (!stats.aktivitasTerbaru || stats.aktivitasTerbaru.length === 0) {
+        list.innerHTML = '<div class="empty-state">Belum ada aktivitas.</div>';
+      } else {
+        list.innerHTML = stats.aktivitasTerbaru.map((a) =>
+          `<div class="event-chip"><div class="date">${a.tanggal}</div><div class="title">${a.keterangan}</div></div>`
+        ).join("");
+      }
+      lucide.createIcons();
+    } catch (err) {
+      document.getElementById("recentList").innerHTML =
+        `<div class="empty-state">Gagal memuat data: ${err.message}</div>`;
+    }
+  }
+</script>
+</body>
+</html>
