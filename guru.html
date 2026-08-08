@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guru — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html" class="active"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="settings"></i><span class="label">Kegiatan</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">Data Guru &amp; Staf</h1>
+
+    <div class="toolbar">
+      <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchGuru" placeholder="Cari nama guru..."></div>
+      <button class="btn btn-primary" id="btnAddGuru" data-roles="super_admin"><i data-lucide="plus"></i>Tambah Guru</button>
+    </div>
+
+    <div class="panel panel-white">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama</th><th>Jenis Kelamin</th><th>Jabatan</th><th>No. HP</th>
+              <th>Email</th><th>Status</th><th data-roles="super_admin">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="guruTableBody">
+            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Tambah/Edit Guru -->
+<div class="modal-overlay" id="guruModal">
+  <div class="modal">
+    <h3 id="guruModalTitle">Tambah Guru</h3>
+    <form id="guruForm">
+      <input type="hidden" id="guruId">
+      <div class="field"><label>Nama Lengkap</label><input type="text" id="guruNama" required></div>
+      <div class="field"><label>Jenis Kelamin</label>
+        <select id="guruJK" required><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select>
+      </div>
+      <div class="field"><label>Jabatan</label><input type="text" id="guruJabatan" placeholder="Guru Kelas A1, Kepala Sekolah, dst." required></div>
+      <div class="field"><label>No. HP</label><input type="text" id="guruHp"></div>
+      <div class="field"><label>Email</label><input type="email" id="guruEmail"></div>
+      <div class="field"><label>Status</label>
+        <select id="guruStatus"><option value="Aktif">Aktif</option><option value="Nonaktif">Nonaktif</option></select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btnCancelGuru">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const session = requireAuth();
+  let allGuru = [];
+  const canEdit = session && session.role === "super_admin";
+
+  if (session) {
+    initLayout(session);
+    loadGuru();
+    document.getElementById("btnAddGuru").addEventListener("click", () => openModal());
+    document.getElementById("btnCancelGuru").addEventListener("click", closeModal);
+    document.getElementById("guruForm").addEventListener("submit", saveGuru);
+    document.getElementById("searchGuru").addEventListener("input", (e) => renderTable(e.target.value));
+  }
+
+  async function loadGuru() {
+    try {
+      allGuru = await apiCall("getGuruList");
+      renderTable("");
+    } catch (err) {
+      document.getElementById("guruTableBody").innerHTML =
+        `<tr><td colspan="7" class="empty-state">Gagal memuat data: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderTable(filter) {
+    const q = filter.trim().toLowerCase();
+    const rows = allGuru.filter((g) => !q || g.nama.toLowerCase().includes(q));
+    const body = document.getElementById("guruTableBody");
+    if (rows.length === 0) {
+      body.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data guru.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map((g) => `
+      <tr>
+        <td>${g.nama}</td>
+        <td>${g.jenisKelamin || "-"}</td>
+        <td>${g.jabatan || "-"}</td>
+        <td>${g.noHp || "-"}</td>
+        <td>${g.email || "-"}</td>
+        <td><span class="badge ${g.status === "Aktif" ? "badge-aktif" : "badge-nonaktif"}">${g.status}</span></td>
+        <td data-roles="super_admin">
+          <div class="row-actions">
+            <button class="icon-btn" onclick='openModal(${JSON.stringify(g)})'><i data-lucide="pencil" style="width:16px;"></i></button>
+            <button class="icon-btn" onclick="deleteGuru('${g.id}')"><i data-lucide="trash-2" style="width:16px;"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+    document.querySelectorAll("[data-roles]").forEach((el) => {
+      const allowed = el.getAttribute("data-roles").split(",");
+      el.style.display = allowed.indexOf(session.role) === -1 ? "none" : "";
+    });
+    lucide.createIcons();
+  }
+
+  function openModal(g) {
+    if (!canEdit) return;
+    document.getElementById("guruModalTitle").textContent = g ? "Edit Guru" : "Tambah Guru";
+    document.getElementById("guruId").value = g ? g.id : "";
+    document.getElementById("guruNama").value = g ? g.nama : "";
+    document.getElementById("guruJK").value = g ? g.jenisKelamin : "Laki-laki";
+    document.getElementById("guruJabatan").value = g ? g.jabatan : "";
+    document.getElementById("guruHp").value = g ? g.noHp : "";
+    document.getElementById("guruEmail").value = g ? g.email : "";
+    document.getElementById("guruStatus").value = g ? g.status : "Aktif";
+    document.getElementById("guruModal").classList.add("open");
+  }
+  function closeModal() {
+    document.getElementById("guruModal").classList.remove("open");
+  }
+
+  async function saveGuru(e) {
+    e.preventDefault();
+    const id = document.getElementById("guruId").value;
+    const payload = {
+      id: id || undefined,
+      nama: document.getElementById("guruNama").value.trim(),
+      jenisKelamin: document.getElementById("guruJK").value,
+      jabatan: document.getElementById("guruJabatan").value.trim(),
+      noHp: document.getElementById("guruHp").value.trim(),
+      email: document.getElementById("guruEmail").value.trim(),
+      status: document.getElementById("guruStatus").value
+    };
+    try {
+      await apiCall(id ? "updateGuru" : "addGuru", payload);
+      closeModal();
+      loadGuru();
+    } catch (err) {
+      alert("Gagal menyimpan: " + err.message);
+    }
+  }
+
+  async function deleteGuru(id) {
+    if (!canEdit) return;
+    if (!confirm("Hapus data guru ini?")) return;
+    try {
+      await apiCall("deleteGuru", { id });
+      loadGuru();
+    } catch (err) {
+      alert("Gagal menghapus: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
