@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pembayaran — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
+      <a href="pembayaran.html" class="active"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="laporan.html"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">Pembayaran SPP</h1>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Total Tagihan (filter aktif)</div>
+        <div class="value-row"><span class="value" id="sumTagihan">Rp 0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Diterima (filter aktif)</div>
+        <div class="value-row"><span class="value" id="sumDibayar">Rp 0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Sudah Lunas</div>
+        <div class="value-row"><span class="value" id="countLunas">0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Belum Lunas</div>
+        <div class="value-row"><span class="value" id="countBelum">0</span></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchPembayaran" placeholder="Cari nama siswa..."></div>
+        <select id="filterBulan" class="field-select-inline"></select>
+      </div>
+      <button class="btn btn-primary" id="btnAddPembayaran" data-roles="super_admin"><i data-lucide="plus"></i>Catat Pembayaran</button>
+    </div>
+
+    <div class="panel panel-white">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Siswa</th><th>Kelas</th><th>Bulan</th><th>Tagihan</th>
+              <th>Dibayar</th><th>Status</th><th>Tgl Bayar</th><th data-roles="super_admin">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="pembayaranTableBody">
+            <tr><td colspan="8" class="empty-state">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Tambah/Edit Pembayaran -->
+<div class="modal-overlay" id="pembayaranModal">
+  <div class="modal">
+    <h3 id="pembayaranModalTitle">Catat Pembayaran</h3>
+    <form id="pembayaranForm">
+      <input type="hidden" id="pembayaranId">
+      <div class="field">
+        <label>Siswa</label>
+        <select id="pembayaranSiswa" required></select>
+      </div>
+      <div class="field"><label>Bulan</label>
+        <select id="pembayaranBulan" required></select>
+      </div>
+      <div class="field"><label>Tahun Ajaran</label><input type="text" id="pembayaranTahunAjaran" placeholder="2025-2026" required></div>
+      <div class="field"><label>Jumlah Tagihan (Rp)</label><input type="number" id="pembayaranTagihan" min="0" required></div>
+      <div class="field"><label>Jumlah Dibayar (Rp)</label><input type="number" id="pembayaranDibayar" min="0" required></div>
+      <div class="field"><label>Tanggal Bayar</label><input type="date" id="pembayaranTanggal"></div>
+      <div class="field"><label>Metode</label>
+        <select id="pembayaranMetode">
+          <option value="Tunai">Tunai</option>
+          <option value="Transfer Bank">Transfer Bank</option>
+          <option value="QRIS">QRIS</option>
+        </select>
+      </div>
+      <div class="field"><label>Catatan</label><input type="text" id="pembayaranCatatan" placeholder="Opsional"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btnCancelPembayaran">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const session = requireAuth();
+  let allPembayaran = [];
+  let allSiswaOptions = [];
+  const canEdit = session && session.role === "super_admin";
+
+  if (session) {
+    initLayout(session);
+    populateBulanFilter();
+    populateBulanSelect();
+    loadSiswaOptions();
+    loadPembayaran();
+    document.getElementById("btnAddPembayaran").addEventListener("click", () => openModal());
+    document.getElementById("btnCancelPembayaran").addEventListener("click", closeModal);
+    document.getElementById("pembayaranForm").addEventListener("submit", savePembayaran);
+    document.getElementById("searchPembayaran").addEventListener("input", () => renderTable());
+    document.getElementById("filterBulan").addEventListener("change", () => renderTable());
+  }
+
+  function populateBulanFilter() {
+    const sel = document.getElementById("filterBulan");
+    const currentMonth = BULAN_LIST[new Date().getMonth()];
+    sel.innerHTML = '<option value="">Semua Bulan</option>' +
+      BULAN_LIST.map((b) => `<option value="${b}" ${b === currentMonth ? "selected" : ""}>${b}</option>`).join("");
+  }
+  function populateBulanSelect() {
+    const sel = document.getElementById("pembayaranBulan");
+    const currentMonth = BULAN_LIST[new Date().getMonth()];
+    sel.innerHTML = BULAN_LIST.map((b) => `<option value="${b}" ${b === currentMonth ? "selected" : ""}>${b}</option>`).join("");
+  }
+
+  async function loadSiswaOptions() {
+    try {
+      const siswa = await apiCall("getSiswaList");
+      allSiswaOptions = siswa.filter((s) => s.status === "Aktif");
+      const sel = document.getElementById("pembayaranSiswa");
+      sel.innerHTML = allSiswaOptions.map((s) => `<option value="${s.id}">${s.nama} — ${s.kelas || "-"}</option>`).join("");
+    } catch (err) {
+      // form tetap bisa dibuka manual meski gagal memuat daftar siswa
+    }
+  }
+
+  async function loadPembayaran() {
+    try {
+      allPembayaran = await apiCall("getPembayaranList");
+      renderTable();
+    } catch (err) {
+      document.getElementById("pembayaranTableBody").innerHTML =
+        `<tr><td colspan="8" class="empty-state">Gagal memuat data: ${err.message}</td></tr>`;
+    }
+  }
+
+  function formatRupiah(n) {
+    return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+  }
+
+  function renderTable() {
+    const q = document.getElementById("searchPembayaran").value.trim().toLowerCase();
+    const bulan = document.getElementById("filterBulan").value;
+    const rows = allPembayaran.filter((p) =>
+      (!q || (p.namaSiswa || "").toLowerCase().includes(q)) && (!bulan || p.bulan === bulan)
+    );
+
+    const totalTagihan = rows.reduce((sum, p) => sum + p.jumlahTagihan, 0);
+    const totalDibayar = rows.reduce((sum, p) => sum + p.jumlahDibayar, 0);
+    document.getElementById("sumTagihan").textContent = formatRupiah(totalTagihan);
+    document.getElementById("sumDibayar").textContent = formatRupiah(totalDibayar);
+    document.getElementById("countLunas").textContent = rows.filter((p) => p.status === "Lunas").length;
+    document.getElementById("countBelum").textContent = rows.filter((p) => p.status !== "Lunas").length;
+
+    const body = document.getElementById("pembayaranTableBody");
+    if (rows.length === 0) {
+      body.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data pembayaran.</td></tr>';
+      return;
+    }
+    const badgeClass = { Lunas: "badge-aktif", Sebagian: "badge-nonaktif", "Belum Lunas": "badge-nonaktif" };
+    body.innerHTML = rows.map((p) => `
+      <tr>
+        <td>${p.namaSiswa}</td>
+        <td>${p.kelas || "-"}</td>
+        <td>${p.bulan} ${p.tahunAjaran ? "(" + p.tahunAjaran + ")" : ""}</td>
+        <td>${formatRupiah(p.jumlahTagihan)}</td>
+        <td>${formatRupiah(p.jumlahDibayar)}</td>
+        <td><span class="badge ${badgeClass[p.status] || "badge-nonaktif"}">${p.status}</span></td>
+        <td>${p.tanggalBayar || "-"}</td>
+        <td data-roles="super_admin">
+          <div class="row-actions">
+            <button class="icon-btn" onclick='openModal(${JSON.stringify(p)})'><i data-lucide="pencil" style="width:16px;"></i></button>
+            <button class="icon-btn" onclick="deletePembayaran('${p.id}')"><i data-lucide="trash-2" style="width:16px;"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+    document.querySelectorAll("[data-roles]").forEach((el) => {
+      const allowed = el.getAttribute("data-roles").split(",");
+      el.style.display = allowed.indexOf(session.role) === -1 ? "none" : "";
+    });
+    lucide.createIcons();
+  }
+
+  function openModal(p) {
+    if (!canEdit) return;
+    document.getElementById("pembayaranModalTitle").textContent = p ? "Edit Pembayaran" : "Catat Pembayaran";
+    document.getElementById("pembayaranId").value = p ? p.id : "";
+    document.getElementById("pembayaranSiswa").value = p ? p.siswaId : (allSiswaOptions[0] ? allSiswaOptions[0].id : "");
+    document.getElementById("pembayaranBulan").value = p ? p.bulan : BULAN_LIST[new Date().getMonth()];
+    document.getElementById("pembayaranTahunAjaran").value = p ? p.tahunAjaran : "";
+    document.getElementById("pembayaranTagihan").value = p ? p.jumlahTagihan : "";
+    document.getElementById("pembayaranDibayar").value = p ? p.jumlahDibayar : "";
+    document.getElementById("pembayaranTanggal").value = p ? p.tanggalBayar : "";
+    document.getElementById("pembayaranMetode").value = p ? p.metode : "Tunai";
+    document.getElementById("pembayaranCatatan").value = p ? p.catatan : "";
+    document.getElementById("pembayaranModal").classList.add("open");
+  }
+  function closeModal() {
+    document.getElementById("pembayaranModal").classList.remove("open");
+  }
+
+  async function savePembayaran(e) {
+    e.preventDefault();
+    const id = document.getElementById("pembayaranId").value;
+    const siswaId = document.getElementById("pembayaranSiswa").value;
+    const siswaTerpilih = allSiswaOptions.find((s) => s.id === siswaId);
+    const payload = {
+      id: id || undefined,
+      siswaId: siswaId,
+      namaSiswa: siswaTerpilih ? siswaTerpilih.nama : "",
+      kelas: siswaTerpilih ? siswaTerpilih.kelas : "",
+      bulan: document.getElementById("pembayaranBulan").value,
+      tahunAjaran: document.getElementById("pembayaranTahunAjaran").value.trim(),
+      jumlahTagihan: Number(document.getElementById("pembayaranTagihan").value) || 0,
+      jumlahDibayar: Number(document.getElementById("pembayaranDibayar").value) || 0,
+      tanggalBayar: document.getElementById("pembayaranTanggal").value,
+      metode: document.getElementById("pembayaranMetode").value,
+      catatan: document.getElementById("pembayaranCatatan").value.trim()
+    };
+    try {
+      await apiCall(id ? "updatePembayaran" : "addPembayaran", payload);
+      closeModal();
+      loadPembayaran();
+    } catch (err) {
+      alert("Gagal menyimpan: " + err.message);
+    }
+  }
+
+  async function deletePembayaran(id) {
+    if (!canEdit) return;
+    if (!confirm("Hapus catatan pembayaran ini?")) return;
+    try {
+      await apiCall("deletePembayaran", { id });
+      loadPembayaran();
+    } catch (err) {
+      alert("Gagal menghapus: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
