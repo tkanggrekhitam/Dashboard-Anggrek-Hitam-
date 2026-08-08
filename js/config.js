@@ -4,7 +4,7 @@
 // Setelah men-deploy Code.gs sebagai Web App (lihat README.md),
 // tempel URL Web App-nya di bawah ini. Contoh:
 // "https://script.google.com/macros/s/AKfycb.../exec"
-const APPS_SCRIPT_URL = "PASTE_URL_WEB_APP_ANDA_DI_SINI";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwUIoyCR7OtNhwoZpb4j9MBFKv2hcMCjbmcUFhIC2h8o_6FPVN8cRw9hAecOdFAH92/exec";
 
 const APP_NAME = "TK Anggrek Hitam";
 
