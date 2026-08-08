@@ -17,7 +17,7 @@
       <a href="dashboard.html" class="active"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
       <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
       <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
-      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="settings"></i><span class="label">Kegiatan</span></a>
+      <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
       <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
       <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
     </nav>
@@ -83,10 +83,18 @@
       </div>
     </div>
 
-    <div class="panel">
-      <h3>Aktivitas Data Terbaru</h3>
-      <div class="event-list" id="recentList">
-        <div class="empty-state">Memuat data...</div>
+    <div class="dash-grid">
+      <div class="panel">
+        <h3>Aktivitas Data Terbaru</h3>
+        <div class="event-list" id="recentList">
+          <div class="empty-state">Memuat data...</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Kegiatan Terdekat</h3>
+        <div class="event-list" id="kegiatanList">
+          <div class="empty-state">Memuat data...</div>
+        </div>
       </div>
     </div>
   </main>
@@ -145,6 +153,15 @@
       } else {
         list.innerHTML = stats.aktivitasTerbaru.map((a) =>
           `<div class="event-chip"><div class="date">${a.tanggal}</div><div class="title">${a.keterangan}</div></div>`
+        ).join("");
+      }
+
+      const kegiatanList = document.getElementById("kegiatanList");
+      if (!stats.kegiatanTerdekat || stats.kegiatanTerdekat.length === 0) {
+        kegiatanList.innerHTML = '<div class="empty-state">Belum ada kegiatan terjadwal. <a href="kegiatan.html" style="color:var(--teal-dark);font-weight:700;">Tambah kegiatan →</a></div>';
+      } else {
+        kegiatanList.innerHTML = stats.kegiatanTerdekat.map((k) =>
+          `<div class="event-chip"><div class="date">${k.tanggal}</div><div class="title">${k.keterangan}</div></div>`
         ).join("");
       }
       lucide.createIcons();
