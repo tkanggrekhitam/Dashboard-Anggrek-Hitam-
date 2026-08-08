@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar no-print">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
+      <a href="pembayaran.html"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="laporan.html" class="active"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+  </aside>
+
+  <header class="topbar no-print">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="print-header" style="display:none;">
+      <h2>Laporan TK Anggrek Hitam</h2>
+      <p id="printMeta"></p>
+    </div>
+
+    <div class="toolbar no-print">
+      <h1 class="page-title" style="margin:0;">Laporan Sekolah</h1>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <select id="filterTahunAjaran" class="field-select-inline"><option value="">Semua Tahun Ajaran</option></select>
+        <select id="filterBulanLaporan" class="field-select-inline"><option value="">Semua Bulan (Pembayaran)</option></select>
+        <button class="btn btn-teal" id="btnCetak"><i data-lucide="printer"></i>Cetak / Simpan PDF</button>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="label">Total Siswa Aktif</div>
+        <div class="value-row"><span class="value" id="lapSiswa">—</span>
+          <div class="icon-wrap no-print"><i data-lucide="users"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Guru &amp; Staf</div>
+        <div class="value-row"><span class="value" id="lapGuru">—</span>
+          <div class="icon-wrap no-print"><i data-lucide="user"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Kegiatan</div>
+        <div class="value-row"><span class="value" id="lapKegiatan">—</span>
+          <div class="icon-wrap no-print"><i data-lucide="calendar-days"></i></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Diterima / Tagihan</div>
+        <div class="value-row"><span class="value" id="lapPembayaran" style="font-size:20px;">—</span>
+          <div class="icon-wrap no-print"><i data-lucide="credit-card"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-white" style="margin-bottom:20px;">
+      <h3>Rekap Siswa per Kelas</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Kelas</th><th>Total Siswa</th><th>Laki-laki</th><th>Perempuan</th></tr></thead>
+          <tbody id="tabelSiswaKelas"><tr><td colspan="4" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel panel-white" style="margin-bottom:20px;">
+      <h3>Rekap Kegiatan Sekolah</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Total</th><th>Terjadwal</th><th>Selesai</th><th>Dibatalkan</th></tr></thead>
+          <tbody id="tabelKegiatanRekap"><tr><td colspan="4" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel panel-white">
+      <h3>Rekap Pembayaran per Kelas</h3>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Kelas</th><th>Total Tagihan</th><th>Total Diterima</th><th>% Lunas</th></tr></thead>
+          <tbody id="tabelPembayaranKelas"><tr><td colspan="4" class="empty-state">Memuat data...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const session = requireAuth();
+
+  if (session) {
+    initLayout(session);
+    populateBulanFilter();
+    loadLaporan();
+    document.getElementById("filterTahunAjaran").addEventListener("change", loadLaporan);
+    document.getElementById("filterBulanLaporan").addEventListener("change", loadLaporan);
+    document.getElementById("btnCetak").addEventListener("click", () => window.print());
+  }
+
+  function populateBulanFilter() {
+    const sel = document.getElementById("filterBulanLaporan");
+    sel.innerHTML = '<option value="">Semua Bulan (Pembayaran)</option>' +
+      BULAN_LIST.map((b) => `<option value="${b}">${b}</option>`).join("");
+  }
+
+  function formatRupiah(n) {
+    return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+  }
+
+  async function loadLaporan() {
+    const tahunAjaran = document.getElementById("filterTahunAjaran").value;
+    const bulan = document.getElementById("filterBulanLaporan").value;
+    try {
+      const data = await apiCall("getLaporanData", { tahunAjaran, bulan });
+
+      // Isi pilihan tahun ajaran (sekali saja, saat masih kosong)
+      const taSelect = document.getElementById("filterTahunAjaran");
+      if (taSelect.options.length === 1) {
+        data.daftarTahunAjaran.forEach((t) => {
+          const opt = document.createElement("option");
+          opt.value = t; opt.textContent = t;
+          taSelect.appendChild(opt);
+        });
+      }
+
+      document.getElementById("lapSiswa").textContent = data.ringkasan.totalSiswaAktif;
+      document.getElementById("lapGuru").textContent = data.ringkasan.totalGuruAktif;
+      document.getElementById("lapKegiatan").textContent = data.ringkasan.totalKegiatan;
+      document.getElementById("lapPembayaran").textContent =
+        formatRupiah(data.ringkasan.totalDibayar) + " / " + formatRupiah(data.ringkasan.totalTagihan);
+
+      const printMeta = document.getElementById("printMeta");
+      printMeta.textContent =
+        "Tahun Ajaran: " + (tahunAjaran || "Semua") + " • Bulan Pembayaran: " + (bulan || "Semua") +
+        " • Dicetak: " + new Date().toLocaleDateString("id-ID");
+
+      const siswaBody = document.getElementById("tabelSiswaKelas");
+      siswaBody.innerHTML = data.siswaPerKelasDetail.length === 0
+        ? '<tr><td colspan="4" class="empty-state">Belum ada data siswa.</td></tr>'
+        : data.siswaPerKelasDetail.map((k) =>
+            `<tr><td>${k.kelas}</td><td>${k.total}</td><td>${k.lakiLaki}</td><td>${k.perempuan}</td></tr>`
+          ).join("");
+
+      const rk = data.rekapKegiatan;
+      document.getElementById("tabelKegiatanRekap").innerHTML =
+        `<tr><td>${rk.total}</td><td>${rk.terjadwal}</td><td>${rk.selesai}</td><td>${rk.dibatalkan}</td></tr>`;
+
+      const byrBody = document.getElementById("tabelPembayaranKelas");
+      byrBody.innerHTML = data.rekapPembayaranPerKelas.length === 0
+        ? '<tr><td colspan="4" class="empty-state">Belum ada data pembayaran untuk filter ini.</td></tr>'
+        : data.rekapPembayaranPerKelas.map((r) =>
+            `<tr><td>${r.kelas}</td><td>${formatRupiah(r.totalTagihan)}</td><td>${formatRupiah(r.totalDibayar)}</td><td>${r.persenLunas}%</td></tr>`
+          ).join("");
+
+      lucide.createIcons();
+    } catch (err) {
+      document.getElementById("tabelSiswaKelas").innerHTML =
+        `<tr><td colspan="4" class="empty-state">Gagal memuat laporan: ${err.message}</td></tr>`;
+    }
+  }
+</script>
+</body>
+</html>
