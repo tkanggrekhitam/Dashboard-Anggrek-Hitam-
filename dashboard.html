@@ -18,8 +18,8 @@
       <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
       <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
       <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
-      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
-      <a href="#" onclick="return false;" style="opacity:.5;"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+      <a href="pembayaran.html"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="laporan.html"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
     </nav>
     <div class="sidebar-footer">
       <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
@@ -65,8 +65,8 @@
         </div>
       </div>
       <div class="stat-card">
-        <div class="label">Total Kelas Aktif</div>
-        <div class="value-row"><span class="value" id="statKelas">—</span>
+        <div class="label">Pembayaran Lunas Bulan Ini</div>
+        <div class="value-row"><span class="value" id="statPembayaran">—</span>
           <div class="icon-wrap"><i data-lucide="book-open"></i></div>
         </div>
       </div>
@@ -117,7 +117,7 @@
       document.getElementById("statSiswaAktif").textContent = stats.jumlahSiswaAktif;
       document.getElementById("statGuru").textContent = stats.jumlahGuru;
       document.getElementById("statSiswaBaru").textContent = stats.siswaBaruTahunIni;
-      document.getElementById("statKelas").textContent = stats.totalKelas;
+      document.getElementById("statPembayaran").textContent = stats.persenPembayaranLunas + "%";
 
       new Chart(document.getElementById("chartPendaftaran"), {
         type: "bar",
