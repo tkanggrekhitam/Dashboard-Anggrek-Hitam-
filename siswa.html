@@ -19,6 +19,7 @@
       <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
       <a href="pembayaran.html"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
       <a href="laporan.html"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+      <a href="profil.html"><i data-lucide="building-2"></i><span class="label">Profil Sekolah</span></a>
     </nav>
     <div class="sidebar-footer">
       <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
@@ -43,7 +44,7 @@
     <h1 class="page-title">Data Siswa</h1>
 
     <div class="toolbar">
-      <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchSiswa" placeholder="Cari nama siswa atau kelas..."></div>
+      <div class="search-box"><i data-lucide="search"></i><input type="text" id="searchSiswa" placeholder="Cari nama, NIS, atau kelompok..."></div>
       <button class="btn btn-primary" id="btnAddSiswa" data-roles="super_admin"><i data-lucide="plus"></i>Tambah Siswa</button>
     </div>
 
@@ -52,12 +53,12 @@
         <table>
           <thead>
             <tr>
-              <th>Nama</th><th>Jenis Kelamin</th><th>Kelas</th><th>Nama Orang Tua</th>
-              <th>Tahun Ajaran</th><th>Status</th><th data-roles="super_admin">Aksi</th>
+              <th>NIS</th><th>Nama</th><th>Kelompok</th><th>JK</th>
+              <th>Nama Ayah</th><th>Nama Ibu</th><th>No. HP</th><th>Status</th><th>Aksi</th>
             </tr>
           </thead>
           <tbody id="siswaTableBody">
-            <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+            <tr><td colspan="9" class="empty-state">Memuat data...</td></tr>
           </tbody>
         </table>
       </div>
@@ -67,21 +68,11 @@
 
 <!-- Modal Tambah/Edit Siswa -->
 <div class="modal-overlay" id="siswaModal">
-  <div class="modal">
+  <div class="modal modal-wide">
     <h3 id="siswaModalTitle">Tambah Siswa</h3>
     <form id="siswaForm">
-      <input type="hidden" id="siswaId">
-      <div class="field"><label>Nama Lengkap</label><input type="text" id="siswaNama" required></div>
-      <div class="field"><label>Jenis Kelamin</label>
-        <select id="siswaJK" required><option value="Laki-laki">Laki-laki</option><option value="Perempuan">Perempuan</option></select>
-      </div>
-      <div class="field"><label>Tanggal Lahir</label><input type="date" id="siswaTglLahir"></div>
-      <div class="field"><label>Nama Orang Tua / Wali</label><input type="text" id="siswaOrtu"></div>
-      <div class="field"><label>Kelas</label><input type="text" id="siswaKelas" placeholder="Kelas A1, A2, B1..." required></div>
-      <div class="field"><label>Tahun Ajaran</label><input type="text" id="siswaTahunAjaran" placeholder="2025-2026" required></div>
-      <div class="field"><label>Status</label>
-        <select id="siswaStatus"><option value="Aktif">Aktif</option><option value="Nonaktif">Nonaktif</option></select>
-      </div>
+      <input type="hidden" id="siswa_id">
+      <div id="siswaFormFields"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="btnCancelSiswa">Batal</button>
         <button type="submit" class="btn btn-primary">Simpan</button>
@@ -90,10 +81,22 @@
   </div>
 </div>
 
+<!-- Modal Detail Siswa (read-only) -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal modal-wide">
+    <h3 id="detailModalTitle">Detail Siswa</h3>
+    <div id="detailContent"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="btnCloseDetail">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/siswa-fields.js"></script>
 <script>
   const session = requireAuth();
   let allSiswa = [];
@@ -101,11 +104,35 @@
 
   if (session) {
     initLayout(session);
+    buildForm();
     loadSiswa();
     document.getElementById("btnAddSiswa").addEventListener("click", () => openModal());
     document.getElementById("btnCancelSiswa").addEventListener("click", closeModal);
     document.getElementById("siswaForm").addEventListener("submit", saveSiswa);
+    document.getElementById("btnCloseDetail").addEventListener("click", closeDetail);
     document.getElementById("searchSiswa").addEventListener("input", (e) => renderTable(e.target.value));
+  }
+
+  function buildForm() {
+    const container = document.getElementById("siswaFormFields");
+    container.innerHTML = SISWA_FIELDS.map((section) => {
+      const fieldsHtml = section.fields.map((f) => {
+        const id = "siswa_" + f.key;
+        let inputHtml;
+        if (f.type === "select") {
+          inputHtml = `<select id="${id}"${f.required ? " required" : ""}>` +
+            (f.required ? "" : '<option value="">-</option>') +
+            f.options.map((o) => `<option value="${o}">${o}</option>`).join("") +
+            `</select>`;
+        } else {
+          inputHtml = `<input type="${f.type}" id="${id}"` +
+            (f.placeholder ? ` placeholder="${f.placeholder}"` : "") +
+            (f.required ? " required" : "") + `>`;
+        }
+        return `<div class="field"><label>${f.label}</label>${inputHtml}</div>`;
+      }).join("");
+      return `<div class="form-section"><h4>${section.section}</h4><div class="form-grid">${fieldsHtml}</div></div>`;
+    }).join("");
   }
 
   async function loadSiswa() {
@@ -114,32 +141,35 @@
       renderTable("");
     } catch (err) {
       document.getElementById("siswaTableBody").innerHTML =
-        `<tr><td colspan="7" class="empty-state">Gagal memuat data: ${err.message}</td></tr>`;
+        `<tr><td colspan="9" class="empty-state">Gagal memuat data: ${err.message}</td></tr>`;
     }
   }
 
   function renderTable(filter) {
-    const q = filter.trim().toLowerCase();
+    const q = (filter || "").trim().toLowerCase();
     const rows = allSiswa.filter((s) =>
-      !q || s.nama.toLowerCase().includes(q) || (s.kelas || "").toLowerCase().includes(q)
+      !q || (s.nama || "").toLowerCase().includes(q) || (s.nis || "").toLowerCase().includes(q) || (s.kelas || "").toLowerCase().includes(q)
     );
     const body = document.getElementById("siswaTableBody");
     if (rows.length === 0) {
-      body.innerHTML = '<tr><td colspan="7" class="empty-state">Tidak ada data siswa.</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" class="empty-state">Tidak ada data siswa.</td></tr>';
       return;
     }
     body.innerHTML = rows.map((s) => `
       <tr>
+        <td>${s.nis || "-"}</td>
         <td>${s.nama}</td>
-        <td>${s.jenisKelamin || "-"}</td>
         <td>${s.kelas || "-"}</td>
-        <td>${s.namaOrtu || "-"}</td>
-        <td>${s.tahunAjaran || "-"}</td>
+        <td>${(s.jenisKelamin || "-").charAt(0)}</td>
+        <td>${s.namaAyah || "-"}</td>
+        <td>${s.namaIbu || "-"}</td>
+        <td>${s.hpAyah || s.hpIbu || "-"}</td>
         <td><span class="badge ${s.status === "Aktif" ? "badge-aktif" : "badge-nonaktif"}">${s.status}</span></td>
-        <td data-roles="super_admin">
+        <td>
           <div class="row-actions">
-            <button class="icon-btn" onclick='openModal(${JSON.stringify(s)})'><i data-lucide="pencil" style="width:16px;"></i></button>
-            <button class="icon-btn" onclick="deleteSiswa('${s.id}')"><i data-lucide="trash-2" style="width:16px;"></i></button>
+            <button class="icon-btn" onclick='openDetail(${JSON.stringify(s)})' title="Detail"><i data-lucide="eye" style="width:16px;"></i></button>
+            <button class="icon-btn" data-roles="super_admin" onclick='openModal(${JSON.stringify(s)})' title="Edit"><i data-lucide="pencil" style="width:16px;"></i></button>
+            <button class="icon-btn" data-roles="super_admin" onclick="deleteSiswa('${s.id}')" title="Hapus"><i data-lucide="trash-2" style="width:16px;"></i></button>
           </div>
         </td>
       </tr>
@@ -154,33 +184,41 @@
   function openModal(s) {
     if (!canEdit) return;
     document.getElementById("siswaModalTitle").textContent = s ? "Edit Siswa" : "Tambah Siswa";
-    document.getElementById("siswaId").value = s ? s.id : "";
-    document.getElementById("siswaNama").value = s ? s.nama : "";
-    document.getElementById("siswaJK").value = s ? s.jenisKelamin : "Laki-laki";
-    document.getElementById("siswaTglLahir").value = s ? s.tanggalLahir : "";
-    document.getElementById("siswaOrtu").value = s ? s.namaOrtu : "";
-    document.getElementById("siswaKelas").value = s ? s.kelas : "";
-    document.getElementById("siswaTahunAjaran").value = s ? s.tahunAjaran : "";
-    document.getElementById("siswaStatus").value = s ? s.status : "Aktif";
+    document.getElementById("siswa_id").value = s ? s.id : "";
+    ALL_SISWA_FIELDS.forEach((f) => {
+      const el = document.getElementById("siswa_" + f.key);
+      if (el) el.value = s ? (s[f.key] || "") : "";
+    });
     document.getElementById("siswaModal").classList.add("open");
   }
   function closeModal() {
     document.getElementById("siswaModal").classList.remove("open");
   }
 
+  function openDetail(s) {
+    document.getElementById("detailModalTitle").textContent = "Detail Siswa — " + s.nama;
+    document.getElementById("detailContent").innerHTML = SISWA_FIELDS.map((section) => {
+      const rows = section.fields
+        .filter((f) => s[f.key])
+        .map((f) => `<div class="detail-row"><span class="detail-label">${f.label}</span><span class="detail-value">${s[f.key]}</span></div>`)
+        .join("");
+      if (!rows) return "";
+      return `<div class="detail-section"><h4>${section.section}</h4>${rows}</div>`;
+    }).join("");
+    document.getElementById("detailModal").classList.add("open");
+  }
+  function closeDetail() {
+    document.getElementById("detailModal").classList.remove("open");
+  }
+
   async function saveSiswa(e) {
     e.preventDefault();
-    const id = document.getElementById("siswaId").value;
-    const payload = {
-      id: id || undefined,
-      nama: document.getElementById("siswaNama").value.trim(),
-      jenisKelamin: document.getElementById("siswaJK").value,
-      tanggalLahir: document.getElementById("siswaTglLahir").value,
-      namaOrtu: document.getElementById("siswaOrtu").value.trim(),
-      kelas: document.getElementById("siswaKelas").value.trim(),
-      tahunAjaran: document.getElementById("siswaTahunAjaran").value.trim(),
-      status: document.getElementById("siswaStatus").value
-    };
+    const id = document.getElementById("siswa_id").value;
+    const payload = { id: id || undefined };
+    ALL_SISWA_FIELDS.forEach((f) => {
+      const el = document.getElementById("siswa_" + f.key);
+      payload[f.key] = el ? el.value.trim() : "";
+    });
     try {
       await apiCall(id ? "updateSiswa" : "addSiswa", payload);
       closeModal();
