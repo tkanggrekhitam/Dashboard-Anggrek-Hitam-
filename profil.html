@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profil Sekolah — TK Anggrek Hitam</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand"><span class="logo-mark">🌸</span><span class="brand-text">TK Anggrek<br>Hitam</span></div>
+    <nav class="menu">
+      <a href="dashboard.html"><i data-lucide="layout-grid"></i><span class="label">Beranda</span></a>
+      <a href="siswa.html"><i data-lucide="users"></i><span class="label">Siswa</span></a>
+      <a href="guru.html"><i data-lucide="user"></i><span class="label">Guru</span></a>
+      <a href="kegiatan.html"><i data-lucide="calendar-days"></i><span class="label">Kegiatan</span></a>
+      <a href="pembayaran.html"><i data-lucide="credit-card"></i><span class="label">Pembayaran</span></a>
+      <a href="laporan.html"><i data-lucide="file-text"></i><span class="label">Laporan</span></a>
+      <a href="profil.html" class="active"><i data-lucide="building-2"></i><span class="label">Profil Sekolah</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" data-logout><i data-lucide="log-out"></i><span class="label">Keluar</span></button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Search..."></div>
+    <div class="topbar-right">
+      <div class="notif"><i data-lucide="bell"></i><span>Pemberitahuan</span></div>
+      <div class="user-chip">
+        <div class="avatar-circle" id="topbarAvatar">A</div>
+        <div>
+          <div id="topbarUserName">—</div>
+          <div class="role-pill" id="topbarUserRole">—</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="toolbar">
+      <h1 class="page-title" style="margin:0;">Profil Sekolah</h1>
+      <button class="btn btn-primary" id="btnEditProfil" data-roles="super_admin"><i data-lucide="pencil"></i>Edit Profil</button>
+    </div>
+
+    <div class="panel panel-white" id="profilView">
+      <div class="empty-state">Memuat data...</div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Edit Profil -->
+<div class="modal-overlay" id="profilModal">
+  <div class="modal modal-wide">
+    <h3>Edit Profil Sekolah</h3>
+    <form id="profilForm">
+      <div class="form-grid">
+        <div class="field"><label>Nama Sekolah</label><input type="text" id="p_sekolah" required></div>
+        <div class="field"><label>NPSN</label><input type="text" id="p_npsn"></div>
+        <div class="field"><label>Akreditasi</label><input type="text" id="p_akreditasi"></div>
+        <div class="field"><label>Kepala Sekolah</label><input type="text" id="p_kepalaSekolah"></div>
+        <div class="field"><label>Naungan / Yayasan</label><input type="text" id="p_naungan"></div>
+        <div class="field"><label>Alamat</label><input type="text" id="p_alamat"></div>
+        <div class="field"><label>Kontak</label><input type="text" id="p_kontak"></div>
+        <div class="field"><label>Email</label><input type="email" id="p_email"></div>
+        <div class="field"><label>Website</label><input type="text" id="p_website"></div>
+        <div class="field"><label>Jumlah Guru</label><input type="text" id="p_jumlahGuru" placeholder="6 ORANG"></div>
+        <div class="field"><label>Jumlah Tenaga Kependidikan</label><input type="text" id="p_jumlahTenagaKependidikan" placeholder="2 ORANG"></div>
+        <div class="field"><label>Jumlah Murid</label><input type="text" id="p_jumlahMurid" placeholder="56 ORANG"></div>
+        <div class="field"><label>Jumlah Kelas</label><input type="text" id="p_jumlahKelas" placeholder="6"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btnCancelProfil">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  const session = requireAuth();
+  const PROFIL_LABELS = [
+    ["sekolah", "Nama Sekolah"], ["npsn", "NPSN"], ["akreditasi", "Akreditasi"],
+    ["kepalaSekolah", "Kepala Sekolah"], ["naungan", "Naungan / Yayasan"], ["alamat", "Alamat"],
+    ["kontak", "Kontak"], ["email", "Email"], ["website", "Website"],
+    ["jumlahGuru", "Jumlah Guru"], ["jumlahTenagaKependidikan", "Jumlah Tenaga Kependidikan"],
+    ["jumlahMurid", "Jumlah Murid"], ["jumlahKelas", "Jumlah Kelas"]
+  ];
+
+  if (session) {
+    initLayout(session);
+    loadProfil();
+    document.getElementById("btnEditProfil").addEventListener("click", openModal);
+    document.getElementById("btnCancelProfil").addEventListener("click", closeModal);
+    document.getElementById("profilForm").addEventListener("submit", saveProfil);
+  }
+
+  let currentProfil = {};
+
+  async function loadProfil() {
+    try {
+      currentProfil = await apiCall("getProfilSekolah");
+      renderView();
+    } catch (err) {
+      document.getElementById("profilView").innerHTML =
+        `<div class="empty-state">Gagal memuat profil: ${err.message}</div>`;
+    }
+  }
+
+  function renderView() {
+    const view = document.getElementById("profilView");
+    if (!currentProfil || !currentProfil.sekolah) {
+      view.innerHTML = '<div class="empty-state">Profil sekolah belum diisi.</div>';
+      return;
+    }
+    view.innerHTML = PROFIL_LABELS.map(([key, label]) =>
+      `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${currentProfil[key] || "-"}</span></div>`
+    ).join("");
+  }
+
+  function openModal() {
+    PROFIL_LABELS.forEach(([key]) => {
+      const el = document.getElementById("p_" + key);
+      if (el) el.value = currentProfil[key] || "";
+    });
+    document.getElementById("profilModal").classList.add("open");
+  }
+  function closeModal() {
+    document.getElementById("profilModal").classList.remove("open");
+  }
+
+  async function saveProfil(e) {
+    e.preventDefault();
+    const payload = {};
+    PROFIL_LABELS.forEach(([key]) => {
+      const el = document.getElementById("p_" + key);
+      payload[key] = el ? el.value.trim() : "";
+    });
+    try {
+      await apiCall("updateProfilSekolah", payload);
+      closeModal();
+      loadProfil();
+    } catch (err) {
+      alert("Gagal menyimpan: " + err.message);
+    }
+  }
+</script>
+</body>
+</html>
